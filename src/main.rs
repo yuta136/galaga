@@ -1,7 +1,7 @@
-use std::default;
+use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
+use player::spawning::spawn_players;
 
-use bevy::{prelude::*, render::color, sprite::MaterialMesh2dBundle};
-
+mod assets;
 mod player;
 
 #[derive(Component)]
@@ -26,12 +26,12 @@ struct Velocity(Vec2);
 struct ProjectileTimer(Timer);
 
 const PADDLE_SIZE: Vec3 = Vec3::new(120.0, 20.0, 0.0);
-const PADDLE_COLOR: Color = Color::rgb(0.3, 0.3, 0.7);
+const PADDLE_COLOR: Color = Color::srgb(0.3, 0.3, 0.7);
 
 const PROJECTILE_SIZE: Vec3 = Vec3::splat(3.0);
 const PROJECTILE_TIME_LIMIT: f32 = 0.1;
-const PROJECTILE_COLOR: Color = Color::rgb(1.0, 1.0, 0.0);
-const ENEMY_COLOR: Color = Color::rgb(0.0, 0.0, 9.0);
+const PROJECTILE_COLOR: Color = Color::srgb(1.0, 1.0, 0.0);
+const ENEMY_COLOR: Color = Color::srgb(0.0, 0.0, 9.0);
 const PROJECTILE_STARTING_POSITION: Vec3 = Vec3::new(0.0, 50.0, 1.0);
 const PLAYER_PROJECTILE_DIRECTION: Vec2 = Vec2::new(0.5, 0.5);
 const PROJECTILE_SPEED: f32 = 400.0;
@@ -43,6 +43,13 @@ pub enum Collision {
     Top,
     Bottom,
     Inside,
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
+enum GameState {
+    #[default]
+    AssetLoading,
+    Playing,
 }
 
 #[derive(States, Clone, Eq, PartialEq, Debug, Hash, Default, Reflect)]
@@ -65,6 +72,7 @@ fn main() {
         .add_systems(
             FixedUpdate,
             (
+                spawn_players,
                 move_player,
                 shoot_projectile,
                 move_projectiles,
@@ -73,9 +81,9 @@ fn main() {
             )
                 .chain(),
         )
-        // .add_plugins((
-        //     player::PlayerPlugin,
-        // ))
+        .add_plugins((
+            player::PlayerPlugin,
+        ))
         .run();
 }
 
