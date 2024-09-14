@@ -1,5 +1,4 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
-use player::spawning::spawn_players;
 
 mod assets;
 mod player;
@@ -27,6 +26,7 @@ struct ProjectileTimer(Timer);
 
 const PADDLE_SIZE: Vec3 = Vec3::new(120.0, 20.0, 0.0);
 const PADDLE_COLOR: Color = Color::srgb(0.3, 0.3, 0.7);
+const POSITION: Vec3 = Vec3::new(-300.0, 0.0, 0.0);
 
 const PROJECTILE_SIZE: Vec3 = Vec3::splat(3.0);
 const PROJECTILE_TIME_LIMIT: f32 = 0.1;
@@ -45,22 +45,6 @@ pub enum Collision {
     Inside,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
-enum GameState {
-    #[default]
-    AssetLoading,
-    Playing,
-}
-
-#[derive(States, Clone, Eq, PartialEq, Debug, Hash, Default, Reflect)]
-pub enum RollbackState {
-    #[default]
-    Setup,
-    RoundStart,
-    InRound,
-    RoundEnd,
-    GameOver,
-}
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -72,18 +56,14 @@ fn main() {
         .add_systems(
             FixedUpdate,
             (
-                spawn_players,
                 move_player,
                 shoot_projectile,
                 move_projectiles,
-                destroy_projectiles,
+                // destroy_projectiles,
                 check_for_collisions,
             )
                 .chain(),
         )
-        .add_plugins((
-            player::PlayerPlugin,
-        ))
         .run();
 }
 
@@ -96,21 +76,19 @@ fn setup_game(
     // Camera
     commands.spawn(Camera2dBundle::default());
 
+    // Image
     commands.spawn((
         SpriteBundle {
             transform: Transform {
-                translation: Vec3::new(0.0, -250.0, 0.0),
-                scale: PADDLE_SIZE,
+                translation: POSITION,
+                rotation: Quat::from_rotation_z(-45.0_f32.to_radians()),
                 ..default()
             },
-            sprite: Sprite {
-                color: PADDLE_COLOR,
-                ..default()
-            },
+            texture: asset_server.load("../assets/player/plane1.png"),
             ..default()
         },
         Player,
-        Collider,
+        Collider
     ));
 
     // Spawn enemies
@@ -199,30 +177,12 @@ fn shoot_projectile(
 
 fn move_projectiles(mut query: Query<&mut Transform, With<Projectile>>) {
     for mut collider_transform in &mut query {
-        let new_projectile_position = collider_transform.translation.y + 250.0 * TIME_STEP;
-        collider_transform.translation.y = new_projectile_position;
+        let new_projectile_position = collider_transform.translation.x + 250.0 * TIME_STEP;
+        collider_transform.translation.x = new_projectile_position;
     }
 }
 
-fn destroy_projectiles(
-    mut commands: Commands,
-    mut query: Query<(Entity, &Transform, &mut Hits), With<Projectile>>,
-) {
-    for (collider_entity, collider_transform, mut hits) in query.iter_mut() {   
-        hits.0 += 1;  
-        if hits.0 >= 2 || collider_transform.translation.y > 350.0 {
-            commands.entity(collider_entity).despawn();
-        }
-    }
-}
 
-fn spawn_projectile(mut commands: Commands) {
-    commands.spawn((
-        Projectile,
-        Transform::default(),
-        Hits(0), 
-    ));
-}
 
 fn check_for_collisions(
     mut commands: Commands,
